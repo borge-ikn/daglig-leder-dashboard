@@ -984,7 +984,11 @@ async function openKjoretoyDrilldown() {
     return;
   }
 
-  _kjoretoyCache = data ?? [];
+  const plateRe = /^[A-ZÆØÅ]{2}\d{5}$/i;
+  _kjoretoyCache = (data ?? []).filter(k =>
+    plateRe.test((k.license_plate ?? '').trim()) &&
+    (k.driver_name ?? '').trim() !== ''
+  );
   renderKjoretoyTabell(_kjoretoyCache);
   document.getElementById('kpi-kjoretoy').textContent = fmtInt(_kjoretoyCache.length);
 }
