@@ -1089,7 +1089,10 @@ async function openAnsatteDrilldown() {
     return;
   }
 
-  _ansatteCache = data ?? [];
+  const skjulTitler = ['administrator', 'renholder'];
+  _ansatteCache = (data ?? []).filter(a =>
+    !skjulTitler.includes((a.job_title ?? '').trim().toLowerCase())
+  );
   renderAnsatteTabell(_ansatteCache);
 }
 
@@ -1123,8 +1126,12 @@ function renderAnsatteTabell(liste) {
     </tr>`;
   }).join('');
 
-  document.getElementById('modal-ansatte-meta').textContent = `${liste.length} aktive ansatte`;
-  document.getElementById('modal-ansatte-footer').textContent = `Viser ${liste.length} av ${(_ansatteCache ?? liste).length} ansatte`;
+  const totalt = (_ansatteCache ?? liste).length;
+  const teknikere = (_ansatteCache ?? liste).filter(a =>
+    (a.job_title ?? '').toLowerCase().includes('tekniker')
+  ).length;
+  document.getElementById('modal-ansatte-meta').textContent = `${totalt} aktive ansatte · ${teknikere} teknikere`;
+  document.getElementById('modal-ansatte-footer').textContent = `Viser ${liste.length} av ${totalt} ansatte`;
 }
 
 function filterAnsatteTabell(q) {
