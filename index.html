@@ -304,6 +304,139 @@
       header { padding: 14px 16px; }
       .last-updated { display: none; }
     }
+
+    /* ── Klikbare KPI-kort ──────────────────────── */
+    .kpi-card.clickable {
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .kpi-card.clickable:hover {
+      box-shadow: 0 4px 16px rgba(28,52,97,.14);
+      transform: translateY(-1px);
+    }
+    .kpi-card.clickable .kpi-label::after {
+      content: ' ↗';
+      font-size: 9px;
+      opacity: 0.5;
+    }
+
+    /* ── Modal ──────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17,24,39,.55);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--card, #fff);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      width: 100%;
+      max-width: 780px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .modal-meta {
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      margin-top: 1px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--text-light);
+      line-height: 1;
+      padding: 0.2rem;
+    }
+    .modal-close:hover { color: var(--text-dark); }
+
+    .modal-search {
+      padding: 0.75rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .modal-search input {
+      width: 100%;
+      background: var(--bg, #f0f2f5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.85rem;
+      font-size: 0.88rem;
+      outline: none;
+      font-family: inherit;
+      color: var(--text-dark);
+    }
+    .modal-search input:focus { border-color: #1c3461; }
+
+    .modal-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .modal-table thead th {
+      position: sticky;
+      top: 0;
+      background: var(--bg, #f0f2f5);
+      text-align: left;
+      padding: 0.6rem 1rem;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-mid);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-table tbody td {
+      padding: 0.6rem 1rem;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #f3f4f6;
+      color: var(--text-dark);
+    }
+
+    .modal-table tbody tr:last-child td { border-bottom: none; }
+    .modal-table tbody tr:hover td { background: #f8fafc; }
+
+    .modal-footer {
+      padding: 0.65rem 1.4rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -326,7 +459,7 @@
 
   <!-- KPI Cards -->
   <div class="kpi-row">
-    <div class="kpi-card">
+    <div class="kpi-card clickable" onclick="openAnsatteDrilldown()">
       <div class="kpi-icon blue">👥</div>
       <div class="kpi-label">Aktive ansatte</div>
       <div class="kpi-value" id="kpi-ansatte">–</div>
@@ -426,6 +559,38 @@
   </div>
 
 </main>
+
+<!-- Modal: Ansatte drill-down -->
+<div class="modal-overlay" id="modal-ansatte" onclick="if(event.target===this)closeAnsatteModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">👥 Aktive ansatte</div>
+        <div class="modal-meta" id="modal-ansatte-meta">Laster…</div>
+      </div>
+      <button class="modal-close" onclick="closeAnsatteModal()">✕</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="modal-ansatte-sok" placeholder="Søk på navn, stilling eller avdeling…"
+        oninput="filterAnsatteTabell(this.value)">
+    </div>
+    <div class="modal-body">
+      <table class="modal-table" id="modal-ansatte-tabell">
+        <thead>
+          <tr>
+            <th>Navn</th>
+            <th>Stilling</th>
+            <th>Avd.</th>
+            <th>Ansatt siden</th>
+            <th style="text-align:right">Alder</th>
+          </tr>
+        </thead>
+        <tbody id="modal-ansatte-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer" id="modal-ansatte-footer"></div>
+  </div>
+</div>
 
 <footer>
   Data hentet live fra Supabase · Oppdateres ved lasting · Industrikran AS &copy; 2026
@@ -757,6 +922,96 @@ function renderFakturering(data) {
 }
 
 loadDashboard();
+
+/* ── Ansatte drill-down ─────────────────────────── */
+
+let _ansatteCache = null;
+
+async function openAnsatteDrilldown() {
+  document.getElementById('modal-ansatte').classList.add('open');
+  document.getElementById('modal-ansatte-sok').value = '';
+
+  if (_ansatteCache) {
+    renderAnsatteTabell(_ansatteCache);
+    return;
+  }
+
+  document.getElementById('modal-ansatte-tbody').innerHTML =
+    '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#9ca3af">Laster…</td></tr>';
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await sb
+    .from('po_ansatte')
+    .select('first_name, last_name, job_title, department_code, hired_date, date_of_birth, end_date, is_archived')
+    .eq('is_archived', false)
+    .or(`end_date.is.null,end_date.gte.${today}`)
+    .order('department_code')
+    .order('last_name');
+
+  if (error) {
+    document.getElementById('modal-ansatte-tbody').innerHTML =
+      `<tr><td colspan="5" style="padding:2rem;text-align:center;color:#dc2626">Feil: ${error.message}</td></tr>`;
+    return;
+  }
+
+  _ansatteCache = data ?? [];
+  renderAnsatteTabell(_ansatteCache);
+}
+
+function renderAnsatteTabell(liste) {
+  const tbody = document.getElementById('modal-ansatte-tbody');
+  const today = new Date();
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:2rem;text-align:center;color:#9ca3af">Ingen treff</td></tr>';
+    document.getElementById('modal-ansatte-meta').textContent = '0 ansatte';
+    document.getElementById('modal-ansatte-footer').textContent = '0 ansatte vises';
+    return;
+  }
+
+  tbody.innerHTML = liste.map(a => {
+    const navn = `${a.first_name} ${a.last_name}`;
+    const alder = a.date_of_birth
+      ? Math.floor((today - new Date(a.date_of_birth)) / (365.25 * 24 * 3600 * 1000))
+      : '–';
+    const ansattSiden = a.hired_date
+      ? new Date(a.hired_date).toLocaleDateString('nb-NO', { year: 'numeric', month: 'short', day: 'numeric' })
+      : '–';
+    const avd = a.department_code ?? '–';
+    const stilling = a.job_title ?? '–';
+    return `<tr>
+      <td><strong>${navn}</strong></td>
+      <td style="color:#6b7280">${stilling}</td>
+      <td><span style="background:#e0e7ff;color:#3730a3;font-size:.72rem;font-weight:600;padding:.15rem .45rem;border-radius:4px">${avd}</span></td>
+      <td style="color:#6b7280">${ansattSiden}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums">${alder}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-ansatte-meta').textContent = `${liste.length} aktive ansatte`;
+  document.getElementById('modal-ansatte-footer').textContent = `Viser ${liste.length} av ${(_ansatteCache ?? liste).length} ansatte`;
+}
+
+function filterAnsatteTabell(q) {
+  if (!_ansatteCache) return;
+  const s = q.trim().toLowerCase();
+  const filtrert = s
+    ? _ansatteCache.filter(a =>
+        `${a.first_name} ${a.last_name}`.toLowerCase().includes(s) ||
+        (a.job_title ?? '').toLowerCase().includes(s) ||
+        (a.department_code ?? '').toLowerCase().includes(s)
+      )
+    : _ansatteCache;
+  renderAnsatteTabell(filtrert);
+}
+
+function closeAnsatteModal() {
+  document.getElementById('modal-ansatte').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAnsatteModal();
+});
 </script>
 </body>
 </html>
