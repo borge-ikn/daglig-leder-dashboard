@@ -1094,6 +1094,7 @@ async function openAnsatteDrilldown() {
     !skjulTitler.includes((a.job_title ?? '').trim().toLowerCase())
   );
   renderAnsatteTabell(_ansatteCache);
+  document.getElementById('kpi-ansatte').textContent = fmtInt(_ansatteCache.length);
 }
 
 function renderAnsatteTabell(liste) {
